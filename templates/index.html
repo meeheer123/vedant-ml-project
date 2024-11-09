@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Clot Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-100">
+    <main class="container mx-auto px-4 py-8">
+        <!-- Header Section with Info Button -->
+        <div class="flex justify-center items-center mb-8 relative">
+            <h1 class="text-4xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
+                Brain Clot Detection System
+            </h1>
+            <button onclick="showInfo()" class="ml-4 p-2 rounded-full bg-cyan-500 hover:bg-cyan-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Info Modal -->
+        <div id="infoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div class="bg-gray-800 p-6 rounded-xl max-w-lg mx-4">
+                <h2 class="text-2xl font-bold text-cyan-400 mb-4">How to Use</h2>
+                <ul class="list-disc list-inside space-y-2 mb-4">
+                    <li>Upload a clear brain scan image (CT or MRI)</li>
+                    <li>The system will automatically process your image</li>
+                    <li>View the detection results and different filter views</li>
+                    <li>Hover over images to zoom and see details</li>
+                </ul>
+                <button onclick="hideInfo()" class="w-full py-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg transition-colors">
+                    Got it!
+                </button>
+            </div>
+        </div>
+
+        <div class="max-w-4xl mx-auto bg-gray-800/50 p-6 rounded-2xl backdrop-blur-sm border border-gray-700 shadow-2xl">
+            <!-- Upload Section -->
+            <div class="mb-8">
+                <label class="block text-cyan-400 mb-2 font-semibold">Upload Brain Scan Image</label>
+                <div class="relative">
+                    <input type="file" accept="image/*" class="hidden" id="imageInput">
+                    <label for="imageInput" class="group flex items-center justify-center w-full h-32 px-4 transition bg-gray-700/50 border-2 border-gray-600 border-dashed rounded-lg appearance-none cursor-pointer hover:border-cyan-400 focus:outline-none">
+                        <div class="flex flex-col items-center space-y-2">
+                            <svg class="w-8 h-8 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <span class="font-medium text-gray-300">Drop files to upload or click to browse</span>
+                            <span class="text-sm text-gray-400">Supported formats: JPEG, PNG</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loading" class="hidden text-center py-8">
+                <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+                <p class="text-cyan-400">Processing image...</p>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results" class="hidden">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-center mb-2" id="prediction-result"></h2>
+                    <div id="confidence-bar" class="w-full h-4 bg-gray-700 rounded-full overflow-hidden">
+                        <div id="confidence-indicator" class="h-full transition-all duration-500 ease-out"></div>
+                    </div>
+                </div>
+
+                <!-- Image Gallery -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="group relative">
+                        <h3 class="text-xl font-semibold text-purple-400 mb-2 flex items-center">
+                            Original Image
+                            <span class="ml-2 text-sm text-gray-400">(Hover to zoom)</span>
+                        </h3>
+                        <div class="overflow-hidden rounded-lg border border-purple-400">
+                            <img id="original-image" class="w-full transform transition-transform group-hover:scale-150" alt="Original">
+                        </div>
+                    </div>
+                    <div class="group relative">
+                        <h3 class="text-xl font-semibold text-cyan-400 mb-2 flex items-center">
+                            Combined Sobel Filter
+                            <span class="ml-2 text-sm text-gray-400">(Hover to zoom)</span>
+                        </h3>
+                        <div class="overflow-hidden rounded-lg border border-cyan-400">
+                            <img id="combined-filter" class="w-full transform transition-transform group-hover:scale-150" alt="Combined">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="group relative">
+                        <h3 class="text-xl font-semibold text-blue-400 mb-2 flex items-center">
+                            Sobel-X Filter
+                            <span class="ml-2 text-sm text-gray-400">(Hover to zoom)</span>
+                        </h3>
+                        <div class="overflow-hidden rounded-lg border border-blue-400">
+                            <img id="sobelx-filter" class="w-full transform transition-transform group-hover:scale-150" alt="Sobel-X">
+                        </div>
+                    </div>
+                    <div class="group relative">
+                        <h3 class="text-xl font-semibold text-green-400 mb-2 flex items-center">
+                            Sobel-Y Filter
+                            <span class="ml-2 text-sm text-gray-400">(Hover to zoom)</span>
+                        </h3>
+                        <div class="overflow-hidden rounded-lg border border-green-400">
+                            <img id="sobely-filter" class="w-full transform transition-transform group-hover:scale-150" alt="Sobel-Y">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function showInfo() {
+            document.getElementById('infoModal').classList.remove('hidden');
+        }
+
+        function hideInfo() {
+            document.getElementById('infoModal').classList.add('hidden');
+        }
+
+        document.getElementById('imageInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Show loading indicator
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await axios.post('/process', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+
+                const results = response.data;
+                
+                // Hide loading indicator
+                document.getElementById('loading').classList.add('hidden');
+                
+                // Show results section
+                document.getElementById('results').classList.remove('hidden');
+                
+                // Update prediction text and confidence bar
+                const confidence = results.has_clot ? results.prediction : (1 - results.prediction);
+                const confidencePercent = (confidence * 100).toFixed(2);
+                
+                document.getElementById('prediction-result').textContent = 
+                    results.has_clot ? `Blood Clot Detected (${confidencePercent}% Confidence)`
+                                   : `No Blood Clot Detected (${confidencePercent}% Confidence)`;
+
+                const confidenceBar = document.getElementById('confidence-indicator');
+                confidenceBar.style.width = `${confidencePercent}%`;
+                confidenceBar.className = `h-full transition-all duration-500 ease-out ${
+                    results.has_clot ? 'bg-red-500' : 'bg-green-500'
+                }`;
+
+                // Update images
+                document.getElementById('original-image').src = results.original_path;
+                document.getElementById('sobelx-filter').src = results.sobelx_path;
+                document.getElementById('sobely-filter').src = results.sobely_path;
+                document.getElementById('combined-filter').src = results.combined_path;
+
+            } catch (error) {
+                console.error('Error processing image:', error);
+                document.getElementById('loading').classList.add('hidden');
+                alert('Error processing image. Please try again.');
+            }
+        });
+    </script>
+</body>
+</html>
